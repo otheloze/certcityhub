@@ -1,0 +1,580 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-1.1.x", "rhel-openssl-3.0.x", "debian-openssl-1.1.x", "debian-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // pooled (PgBouncer, port 6543) - runtime queries
+  directUrl = env("DIRECT_URL") // direct (port 5432) - migrations only
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+  ORG_ADMIN
+  TUTOR
+}
+
+enum ExamStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum ExamVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TopicStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+// Additive-only: new question types are added here, never as a new table or
+// an `if (exam === ...)` branch in application code.
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  NUMERIC
+  SHORT_ANSWER
+}
+
+enum QuestionStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  RETIRED
+}
+
+enum AttemptMode {
+  SIMULATION
+  PRACTICE
+}
+
+enum CreditScope {
+  GLOBAL
+  EXAM
+}
+
+enum CreditSource {
+  PURCHASE
+  FREE_PLAN
+  ADMIN_GRANT
+  ORG_GRANT
+}
+
+enum CreditTxReason {
+  GRANT
+  EXAM_STARTED
+  ADMIN_REFUND
+  ADMIN_ADJUSTMENT
+}
+
+enum PurchaseStatus {
+  COMPLETED
+  FAILED
+}
+
+// Deliberately just three states for Sprint 2 - grading/analysis states
+// (GRADING, GRADED, ANALYZED) are introduced in the scoring sprint.
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  EXPIRED
+}
+
+model User {
+  id                     String              @id @default(uuid())
+  email                  String              @unique
+  passwordHash           String
+  role                   Role                @default(STUDENT)
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  createdQuestions       Question[]          @relation("QuestionCreatedBy")
+  updatedQuestions       Question[]          @relation("QuestionUpdatedBy")
+  auditLogs              AuditLog[]
+  attempts               Attempt[]
+  purchases              Purchase[]
+  creditLots             CreditLot[]
+  organizationMembership OrganizationMember?
+  tutorProfile           TutorProfile?
+
+  @@map("users")
+}
+
+model Exam {
+  id                   String                       @id @default(uuid())
+  slug                 String                       @unique
+  title                String
+  description          String?
+  status               ExamStatus                   @default(ACTIVE)
+  // Catalogue presentation metadata - content, not code.
+  category             String                       @default("General")
+  shortCode            String?
+  provider             String?
+  level                String?
+  sortOrder            Int                          @default(0)
+  // null = public platform exam, shown in the catalogue. Non-null = a private
+  // exam owned by that organization; excluded from the public catalogue and
+  // only attemptable by that organization's active members.
+  organizationId       String?
+  organization         Organization?                @relation(fields: [organizationId], references: [id])
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+  versions             ExamVersion[]
+  questions            Question[]
+  products             Product[]
+  accessCodes          OrganizationExamAccessCode[]
+  tutorSpecializations TutorSpecialization[]
+
+  @@index([organizationId])
+  @@map("exams")
+}
+
+// Every exam version carries its own navigation/timing/scoring configuration
+// as data (`config`), never as an `if (examSlug === 'aws')` branch. Once
+// published, a version and its topic tree are immutable - to change the
+// blueprint, create a new version.
+model ExamVersion {
+  id           String            @id @default(uuid())
+  examId       String
+  exam         Exam              @relation(fields: [examId], references: [id])
+  versionLabel String
+  status       ExamVersionStatus @default(DRAFT)
+  config       Json
+  publishedAt  DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  topics       Topic[]
+  questions    Question[]
+  attempts     Attempt[]
+
+  @@unique([examId, versionLabel])
+  @@map("exam_versions")
+}
+
+// Self-referential tree of unlimited depth. Subject/Section/Topic/Subtopic
+// are all just labels for nodes at different depths of this one table - do
+// not create per-exam topic tables.
+model Topic {
+  id             String          @id @default(uuid())
+  examVersionId  String
+  examVersion    ExamVersion     @relation(fields: [examVersionId], references: [id])
+  parentId       String?
+  parent         Topic?          @relation("TopicChildren", fields: [parentId], references: [id])
+  children       Topic[]         @relation("TopicChildren")
+  title          String
+  slug           String
+  sortOrder      Int             @default(0)
+  status         TopicStatus     @default(ACTIVE)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  questionTopics QuestionTopic[]
+
+  @@unique([examVersionId, parentId, slug])
+  @@index([examVersionId, parentId])
+  @@map("topics")
+}
+
+model Question {
+  id                   String           @id @default(uuid())
+  examId               String
+  exam                 Exam             @relation(fields: [examId], references: [id])
+  examVersionId        String
+  examVersion          ExamVersion      @relation(fields: [examVersionId], references: [id])
+  type                 QuestionType
+  title                String?
+  stem                 Json
+  answerSchema         Json
+  explanation          Json?
+  difficulty           Int?
+  estimatedTimeSeconds Int?
+  tags                 String[]
+  status               QuestionStatus   @default(DRAFT)
+  version              Int              @default(1)
+  createdById          String?
+  createdBy            User?            @relation("QuestionCreatedBy", fields: [createdById], references: [id])
+  updatedById          String?
+  updatedBy            User?            @relation("QuestionUpdatedBy", fields: [updatedById], references: [id])
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  options              QuestionOption[]
+  questionTopics       QuestionTopic[]
+
+  @@index([examId])
+  @@index([examVersionId])
+  @@index([status])
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label      String
+  content    Json
+  isCorrect  Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([questionId])
+  @@map("question_options")
+}
+
+model QuestionTopic {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  topicId    String
+  topic      Topic    @relation(fields: [topicId], references: [id])
+  isPrimary  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@unique([questionId, topicId])
+  @@index([topicId])
+  @@map("question_topics")
+}
+
+// Created once, at attempt start, from whatever questions/config are live at
+// that moment. Never re-read from Question/ExamVersion afterwards - this is
+// what keeps a historical attempt immutable even if an admin edits or
+// retires the underlying question later.
+model Attempt {
+  id            String            @id @default(uuid())
+  userId        String
+  user          User              @relation(fields: [userId], references: [id])
+  examVersionId String
+  examVersion   ExamVersion       @relation(fields: [examVersionId], references: [id])
+  mode          AttemptMode       @default(SIMULATION)
+  status        AttemptStatus     @default(IN_PROGRESS)
+  startedAt     DateTime          @default(now())
+  expiresAt     DateTime
+  submittedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  snapshot      AttemptSnapshot?
+  questions     AttemptQuestion[]
+  answers       Answer[]
+  score         Score?
+
+  @@index([userId])
+  @@index([examVersionId])
+  @@map("attempts")
+}
+
+model AttemptSnapshot {
+  id                String   @id @default(uuid())
+  attemptId         String   @unique
+  attempt           Attempt  @relation(fields: [attemptId], references: [id])
+  examVersionConfig Json
+  createdAt         DateTime @default(now())
+
+  @@map("attempt_snapshots")
+}
+
+// `questionId` is a soft reference for analytics only, not a Prisma relation -
+// editing or retiring the live Question must never change what a past
+// attempt shows. `snapshot` carries the full frozen question (incl. correct
+// answers, used for grading); student-facing endpoints strip those fields.
+model AttemptQuestion {
+  id              String   @id @default(uuid())
+  attemptId       String
+  attempt         Attempt  @relation(fields: [attemptId], references: [id])
+  order           Int
+  questionId      String
+  snapshot        Json
+  markedForReview Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  answer          Answer?
+
+  @@unique([attemptId, order])
+  @@unique([attemptId, questionId])
+  @@index([attemptId])
+  @@map("attempt_questions")
+}
+
+model Answer {
+  id                String          @id @default(uuid())
+  attemptId         String
+  attempt           Attempt         @relation(fields: [attemptId], references: [id])
+  attemptQuestionId String          @unique
+  attemptQuestion   AttemptQuestion @relation(fields: [attemptQuestionId], references: [id])
+  responseData      Json
+  answeredAt        DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([attemptId])
+  @@map("answers")
+}
+
+// Computed once, when an attempt transitions to SUBMITTED/EXPIRED, and never
+// recomputed afterwards - an admin later editing the live question must not
+// silently change a candidate's historical score. `breakdown` carries the
+// per-question and per-topic detail the result view renders.
+model Score {
+  id         String   @id @default(uuid())
+  attemptId  String   @unique
+  attempt    Attempt  @relation(fields: [attemptId], references: [id])
+  strategy   String
+  rawScore   Float
+  maxScore   Float
+  percentage Float
+  breakdown  Json
+  computedAt DateTime @default(now())
+
+  @@map("scores")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorId     String?
+  actor       User?    @relation(fields: [actorId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  before      Json?
+  after       Json?
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Attempt-credit ledger. Two separate concerns that meet only at attempt start:
+//   Product -> Purchase -> CreditLot (what a user owns) -> CreditTransaction
+//   (append-only audit trail) -> Attempt (what a credit is spent on).
+// A CreditLot's `remaining` is maintained transactionally under a per-user
+// advisory lock, and every change to it has a matching CreditTransaction row,
+// so the balance can always be re-derived and audited from the ledger.
+// ---------------------------------------------------------------------------
+
+// Everything sold or granted is data: price, scope, size, expiry and whether
+// the attempts are limited to a fraction of the exam ("free plan" = 2 attempts
+// at 0.25) are columns here, never branches in code.
+model Product {
+  id               String      @id @default(uuid())
+  code             String      @unique
+  name             String
+  scopeType        CreditScope
+  examId           String?
+  exam             Exam?       @relation(fields: [examId], references: [id])
+  credits          Int
+  priceCents       Int
+  currency         String      @default("USD")
+  validityDays     Int?
+  questionFraction Float       @default(1)
+  isActive         Boolean     @default(true)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  purchases        Purchase[]
+
+  @@map("products")
+}
+
+model Purchase {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  productId   String
+  product     Product        @relation(fields: [productId], references: [id])
+  status      PurchaseStatus
+  amountCents Int
+  currency    String
+  providerRef String?
+  createdAt   DateTime       @default(now())
+  lots        CreditLot[]
+
+  @@index([userId])
+  @@map("purchases")
+}
+
+model CreditLot {
+  id               String                      @id @default(uuid())
+  userId           String
+  user             User                        @relation(fields: [userId], references: [id])
+  scopeType        CreditScope
+  examId           String?
+  granted          Int
+  remaining        Int
+  expiresAt        DateTime?
+  questionFraction Float                       @default(1)
+  source           CreditSource
+  purchaseId       String?
+  purchase         Purchase?                   @relation(fields: [purchaseId], references: [id])
+  createdAt        DateTime                    @default(now())
+  transactions     CreditTransaction[]
+  orgAccessCode    OrganizationExamAccessCode?
+
+  @@index([userId])
+  @@map("entitlement_credits")
+}
+
+model CreditTransaction {
+  id        String         @id @default(uuid())
+  userId    String
+  lotId     String
+  lot       CreditLot      @relation(fields: [lotId], references: [id])
+  amount    Int
+  reason    CreditTxReason
+  attemptId String?
+  actorId   String?
+  note      String?
+  createdAt DateTime       @default(now())
+
+  // At most one debit and one refund per attempt (NULL attemptIds are distinct).
+  @@unique([attemptId, reason])
+  @@index([userId])
+  @@index([lotId])
+  @@map("credit_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Organizations (B2B). A org provisions member accounts itself and grants
+// them one-attempt access to shared platform exams (JAMB/WAEC by default,
+// data-configurable via allowedExamSlugs) gated by a one-time access code,
+// and may own private custom exams (Exam.organizationId) that are unlimited
+// and free for its own members - see AttemptsService.start() for both paths.
+// ---------------------------------------------------------------------------
+
+enum OrgRole {
+  ORG_ADMIN
+  ORG_MEMBER
+}
+
+enum MemberStatus {
+  ACTIVE
+  REVOKED
+}
+
+enum AccessCodeStatus {
+  UNUSED
+  USED
+  REVOKED
+}
+
+model Organization {
+  id               String                       @id @default(uuid())
+  slug             String                       @unique
+  name             String
+  missionStatement String?
+  logoUrl          String?
+  // Which shared platform exam slugs this org may grant member access to.
+  // Data, not code - a new grantable exam is a config change, not a deploy.
+  allowedExamSlugs String[]                     @default(["jamb-utme", "waec-wassce"])
+  createdAt        DateTime                     @default(now())
+  updatedAt        DateTime                     @updatedAt
+  members          OrganizationMember[]
+  exams            Exam[]
+  accessCodes      OrganizationExamAccessCode[]
+
+  @@map("organizations")
+}
+
+model OrganizationMember {
+  id             String                       @id @default(uuid())
+  organizationId String
+  organization   Organization                 @relation(fields: [organizationId], references: [id])
+  // One platform account belongs to at most one org for now (MVP
+  // simplification - the FK lives here rather than on User so dropping this
+  // constraint later, if multi-org membership is ever needed, is a one-line
+  // migration rather than a redesign).
+  userId         String                       @unique
+  user           User                         @relation(fields: [userId], references: [id])
+  orgRole        OrgRole                      @default(ORG_MEMBER)
+  displayName    String?
+  externalRef    String?
+  status         MemberStatus                 @default(ACTIVE)
+  createdAt      DateTime                     @default(now())
+  accessCodes    OrganizationExamAccessCode[]
+
+  @@index([organizationId])
+  @@map("organization_members")
+}
+
+// One-time PIN gating a single 1-attempt CreditLot for one member on one
+// exam. Entering the correct code at attempt-start is what "spends" it -
+// see AttemptsService.start() / OrganizationsService.redeemAccessCode.
+model OrganizationExamAccessCode {
+  id             String             @id @default(uuid())
+  organizationId String
+  organization   Organization       @relation(fields: [organizationId], references: [id])
+  memberId       String
+  member         OrganizationMember @relation(fields: [memberId], references: [id])
+  examId         String
+  exam           Exam               @relation(fields: [examId], references: [id])
+  // sha256 of the plaintext code - these are high-entropy generated strings,
+  // not user-chosen passwords, so a fast hash is appropriate (unlike
+  // User.passwordHash, which stays on bcrypt).
+  codeHash       String
+  creditLotId    String             @unique
+  creditLot      CreditLot          @relation(fields: [creditLotId], references: [id])
+  status         AccessCodeStatus   @default(UNUSED)
+  attemptId      String?
+  createdAt      DateTime           @default(now())
+  usedAt         DateTime?
+
+  @@index([memberId, examId, status])
+  @@map("organization_exam_access_codes")
+}
+
+// ---------------------------------------------------------------------------
+// Tutors. A verified-profile directory: a tutor signs up, builds a profile
+// (photo, resume, specializations) and submits it for admin approval before
+// it is visible to students or eligible for matching. Matching against a
+// student's weak topics is by (examId, topicKeyword text), deliberately not
+// a Topic FK - topics are re-created per ExamVersion on every republish, so
+// a stable match key has to be the Exam plus free text, not a Topic row.
+// See DashboardService.forUser / TutorsService.matchForWeakTopics.
+// ---------------------------------------------------------------------------
+
+enum TutorProfileStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model TutorProfile {
+  id              String                @id @default(uuid())
+  userId          String                @unique
+  user            User                  @relation(fields: [userId], references: [id])
+  displayName     String
+  headline        String?
+  bio             String?
+  photoUrl        String?
+  resumeUrl       String?
+  status          TutorProfileStatus    @default(DRAFT)
+  rejectionReason String?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  specializations TutorSpecialization[]
+
+  @@index([status])
+  @@map("tutor_profiles")
+}
+
+model TutorSpecialization {
+  id             String       @id @default(uuid())
+  tutorProfileId String
+  tutorProfile   TutorProfile @relation(fields: [tutorProfileId], references: [id], onDelete: Cascade)
+  examId         String
+  exam           Exam         @relation(fields: [examId], references: [id])
+  // null = "any topic in this exam". Otherwise matched case-insensitively,
+  // as a substring, against a student's weak-topic title text.
+  topicKeyword   String?
+  createdAt      DateTime     @default(now())
+
+  @@index([examId, topicKeyword])
+  @@map("tutor_specializations")
+}

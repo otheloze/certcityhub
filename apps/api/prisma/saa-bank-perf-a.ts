@@ -1,0 +1,280 @@
+import { Q, ms, sc } from "./seed-helpers";
+
+// Original SAA-C03-style scenario questions written for this platform.
+// Not copied from any exam, dump or third-party question bank.
+
+export const SAA_PERF_A: Q[] = [
+  // ---- Compute ----
+  sc(
+    "A company runs a compute-intensive video transcoding workload that benefits from high CPU performance. Which EC2 instance family is MOST appropriate?",
+    ["Compute optimized (C family)", "Memory optimized (R family)", "Storage optimized (I family)", "General purpose burstable (T family)"],
+    0,
+    "Compute optimized instances have a high ratio of vCPU to memory and suit CPU-bound workloads such as transcoding, batch processing and high-performance web serving.",
+  ),
+  sc(
+    "An in-memory analytics application loads a 400 GB dataset into RAM for fast queries. Which instance family should be chosen?",
+    ["Memory optimized", "Compute optimized", "Accelerated computing", "Burstable general purpose"],
+    0,
+    "Memory optimized instances provide large amounts of RAM per vCPU for in-memory databases and analytics.",
+  ),
+  sc(
+    "A company runs stateless microservices on Linux and wants to improve price performance without changing application code beyond recompiling for a different architecture. Which choice should it evaluate?",
+    ["AWS Graviton-based instances", "Larger x86 instances", "Dedicated Hosts", "Instances with instance store only"],
+    0,
+    "Graviton processors typically deliver better price performance for many Linux workloads that can be built for the Arm architecture.",
+  ),
+  sc(
+    "A nightly batch job can be interrupted and restarted, and the company wants the LOWEST possible compute cost. Which purchasing option is MOST suitable?",
+    ["Spot Instances", "On-Demand Instances", "Dedicated Hosts", "Three-year Reserved Instances"],
+    0,
+    "Spot Instances offer large discounts for fault-tolerant, interruptible workloads.",
+  ),
+  sc(
+    "An Auto Scaling group must keep costs low while maintaining capacity. The workload is stateless and tolerates instance interruption. What configuration helps?",
+    ["A mixed instances policy that combines On-Demand base capacity with Spot Instances across several instance types", "Only one instance type on Spot", "Only On-Demand instances", "A single very large Spot Instance"],
+    0,
+    "Mixing purchase options and diversifying instance types raises the chance of getting Spot capacity while keeping a stable base.",
+  ),
+  sc(
+    "A company's steady-state usage of EC2, Fargate and Lambda varies between instance families and Regions over the next year. It wants a discount with the MOST flexibility. Which option should it choose?",
+    ["A Compute Savings Plan", "An EC2 Instance Savings Plan for one family in one Region", "Standard Reserved Instances for a specific instance type", "Spot Instances only"],
+    0,
+    "Compute Savings Plans apply across instance families, Regions, operating systems, and also to Fargate and Lambda, offering the most flexibility.",
+  ),
+  sc(
+    "A Lambda function that processes images runs slowly. Monitoring shows it uses all of its configured memory and CPU is saturated. What is the SIMPLEST way to improve performance?",
+    ["Increase the function's memory setting, which also increases its CPU allocation", "Increase the function timeout only", "Add more subnets", "Move the function to a larger VPC"],
+    0,
+    "Lambda allocates CPU in proportion to configured memory, so increasing memory can shorten execution time.",
+  ),
+  sc(
+    "A team wants to run containers without managing the underlying instances and pay only for the CPU and memory tasks use. Which launch type fits?",
+    ["AWS Fargate", "EC2 launch type with reserved instances", "Dedicated Hosts", "Bare metal instances"],
+    0,
+    "Fargate is serverless compute for containers, billed for requested vCPU and memory while tasks run.",
+  ),
+  sc(
+    "A tightly coupled high-performance computing workload needs the lowest possible network latency between instances. What should be used?",
+    ["A cluster placement group in a single Availability Zone", "A spread placement group across Regions", "Instances in different Regions", "A partition placement group across AZs"],
+    0,
+    "Cluster placement groups pack instances close together within an AZ for low latency and high throughput.",
+  ),
+  sc(
+    "A web server with low average CPU usage but occasional short spikes runs on a fixed-performance instance sized for peak. The company wants to reduce cost. What is a good option?",
+    ["Use a burstable T-family instance with baseline CPU and CPU credits", "Use a larger compute optimized instance", "Use a Dedicated Host", "Add more EBS volumes"],
+    0,
+    "Burstable instances are designed for workloads that run below baseline most of the time and need short bursts.",
+  ),
+  sc(
+    "A machine-learning team trains deep learning models and needs GPU acceleration. Which EC2 category should they use?",
+    ["Accelerated computing instances", "Storage optimized instances", "General purpose T instances", "Memory optimized instances"],
+    0,
+    "Accelerated computing instances provide GPUs or purpose-built accelerators for ML training and inference.",
+  ),
+  sc(
+    "Thousands of independent batch jobs must run when capacity is available, with automatic job queuing and instance provisioning. Which service is MOST appropriate?",
+    ["AWS Batch", "AWS Config", "Amazon Route 53", "AWS Artifact"],
+    0,
+    "AWS Batch schedules and runs batch jobs, provisioning the right compute resources based on queue demand.",
+  ),
+  sc(
+    "An application requires the lowest storage latency and highest IOPS for a critical database on EC2 and needs more than 16,000 IOPS with consistent performance. Which EBS volume type is MOST suitable?",
+    ["Provisioned IOPS SSD (io2)", "Throughput optimized HDD (st1)", "Cold HDD (sc1)", "General purpose SSD (gp2) at minimum size"],
+    0,
+    "io2 delivers high, provisioned IOPS with low latency for I/O-intensive databases.",
+  ),
+  // ---- Storage ----
+  sc(
+    "A company wants to reduce the cost of EBS volumes for a general purpose workload and be able to set IOPS and throughput independently of volume size. Which volume type should it choose?",
+    ["gp3", "gp2", "st1", "sc1"],
+    0,
+    "gp3 lets you provision IOPS and throughput independently of capacity and is typically cheaper per GB than gp2.",
+  ),
+  sc(
+    "A big-data workload streams very large sequential files from disks attached to EC2 and needs low cost per GB with high throughput. Which volume type fits?",
+    ["Throughput Optimized HDD (st1)", "Provisioned IOPS SSD (io2)", "General purpose SSD (gp3) at high IOPS", "Instance store with no backup"],
+    0,
+    "st1 is designed for frequently accessed, throughput-intensive sequential workloads at lower cost than SSD.",
+  ),
+  sc(
+    "An application needs extremely fast temporary storage for a cache that can be rebuilt if lost. The data does not need to persist across instance stops. What is the MOST cost-effective option?",
+    ["Instance store volumes", "Provisioned IOPS EBS volumes", "Amazon EFS", "Amazon S3 Glacier"],
+    0,
+    "Instance store provides very high I/O at no additional storage cost, but its data is lost when the instance stops or fails.",
+  ),
+  sc(
+    "Many Linux instances need shared file access with throughput that scales with the amount of data stored and needs to burst for occasional heavy reads. Which EFS configuration is the SIMPLEST to start with?",
+    ["Elastic throughput mode (or bursting throughput) with General Purpose performance mode", "Provisioned IOPS EBS volumes shared between instances", "S3 Glacier Deep Archive", "Instance store"],
+    0,
+    "EFS elastic or bursting throughput adapts to workload demands without manual provisioning, and General Purpose mode suits most latency-sensitive use cases.",
+  ),
+  sc(
+    "A high-performance computing workload needs a parallel file system with sub-millisecond latency that can read data directly from an S3 bucket. Which service should be used?",
+    ["Amazon FSx for Lustre linked to the S3 bucket", "Amazon EFS Standard", "Amazon S3 Standard-IA", "Amazon EBS gp2"],
+    0,
+    "FSx for Lustre provides a high-performance parallel file system that can lazily load data from S3 and write results back.",
+  ),
+  sc(
+    "A company migrating a Windows application needs a fully managed file share that supports SMB, NTFS permissions and Active Directory integration. Which service fits?",
+    ["Amazon FSx for Windows File Server", "Amazon EFS", "Amazon S3 with static hosting", "Amazon EBS io2"],
+    0,
+    "FSx for Windows File Server provides native SMB file shares with Active Directory support.",
+  ),
+  sc(
+    "Log files are written to S3. They are accessed frequently for 30 days, rarely for 90 days, and must be kept for 7 years at the lowest cost. Which solution is MOST cost-effective?",
+    ["A lifecycle policy that transitions objects to S3 Standard-IA after 30 days and to S3 Glacier Deep Archive after 120 days", "Keep everything in S3 Standard", "Move objects to Glacier after one day", "Delete objects after 30 days"],
+    0,
+    "Lifecycle rules automatically move data through cheaper storage classes as access declines.",
+  ),
+  sc(
+    "The access pattern for a large set of objects is unknown and changes over time. The company wants automatic cost optimisation without retrieval charges for frequent access changes. Which storage class should be used?",
+    ["S3 Intelligent-Tiering", "S3 One Zone-IA", "S3 Glacier Flexible Retrieval", "S3 Standard only"],
+    0,
+    "Intelligent-Tiering moves objects between access tiers automatically based on usage, without retrieval fees for tier changes.",
+  ),
+  sc(
+    "A company stores backups that are needed only in rare emergencies. When needed, retrieval within 12 hours is acceptable. It wants the lowest storage cost. Which class fits BEST?",
+    ["S3 Glacier Deep Archive", "S3 Standard", "S3 Standard-IA", "S3 Intelligent-Tiering frequent tier"],
+    0,
+    "Deep Archive is the lowest-cost class and supports standard retrieval within about 12 hours.",
+  ),
+  sc(
+    "Users around the world upload large video files to an S3 bucket in one Region and experience slow uploads. Which combination improves upload speed?",
+    ["Enable S3 Transfer Acceleration and use multipart upload", "Reduce the file size by deleting frames", "Move the bucket to Glacier", "Use SFTP over a single connection"],
+    0,
+    "Transfer Acceleration routes uploads through edge locations, and multipart upload parallelises large transfers.",
+  ),
+  sc(
+    "An application makes thousands of read requests per second to objects under a single S3 prefix and is being throttled. What is the BEST way to scale request rates?",
+    ["Spread objects across multiple prefixes so requests are parallelised", "Use a single very long prefix", "Compress the bucket", "Enable versioning"],
+    0,
+    "S3 supports high request rates per prefix, and distributing objects across prefixes increases total throughput.",
+  ),
+  sc(
+    "Analysts run simple SQL queries on CSV log files in S3 and only need a small subset of columns and rows. They want to reduce the amount of data read. Which approach helps MOST?",
+    ["Convert the data to a columnar format such as Parquet and query it with Athena using partitions", "Copy the files to an EC2 instance and use grep", "Store the files uncompressed in Glacier", "Use larger CSV files only"],
+    0,
+    "Columnar formats and partitioning let Athena scan less data, improving speed and reducing per-query cost.",
+  ),
+  sc(
+    "An on-premises application needs low-latency access to frequently used data while the full dataset lives in Amazon S3. Which AWS Storage Gateway type fits?",
+    ["Amazon S3 File Gateway with local cache", "Tape Gateway", "Volume Gateway in stored mode with no S3", "AWS Snowball"],
+    0,
+    "S3 File Gateway exposes NFS/SMB file shares backed by S3 and caches recently used data locally.",
+  ),
+  sc(
+    "A company needs to move 200 TB from an on-premises NAS to S3 over a 1 Gbps link and wants automated, scheduled, incremental transfers with data validation. Which service is MOST appropriate?",
+    ["AWS DataSync", "AWS Snowmobile for 200 TB", "Manual uploads through the console", "Amazon Kinesis Data Firehose"],
+    0,
+    "DataSync automates and accelerates transfers between on-premises storage and AWS, with scheduling, filtering and integrity checks.",
+  ),
+  sc(
+    "A remote site has poor connectivity and must transfer 80 TB of data to AWS within two weeks. Which option is MOST practical?",
+    ["AWS Snowball Edge devices shipped to the site", "Upload over the site's slow internet link", "Email the files", "AWS Direct Connect provisioned within a day"],
+    0,
+    "Snow Family devices transfer large volumes offline when network capacity or time is limited.",
+  ),
+  sc(
+    "A clustered application needs several EC2 instances in the same Availability Zone to read and write the same block volume at the same time. Which feature enables this?",
+    ["EBS Multi-Attach on an io2 volume", "Standard EBS attach to multiple instances", "Instance store", "S3 versioning"],
+    0,
+    "Multi-Attach lets a Provisioned IOPS volume attach to several Nitro instances in the same AZ, for clustered applications that manage write ordering.",
+  ),
+  sc(
+    "Files in EFS are rarely accessed after 30 days but must stay available in the same file system. How can the company reduce cost automatically?",
+    ["Enable EFS lifecycle management to move files to the Infrequent Access storage class", "Delete the files", "Move the file system to another Region", "Convert it to instance store"],
+    0,
+    "EFS lifecycle management transitions inactive files to the lower-cost IA class while keeping them accessible.",
+  ),
+  // ---- Database ----
+  sc(
+    "A company's relational workload needs up to five times the throughput of standard MySQL with storage that grows automatically and six-way replication across three AZs. Which database service should it choose?",
+    ["Amazon Aurora MySQL-compatible edition", "MySQL on a single EC2 instance", "Amazon DynamoDB", "Amazon Redshift"],
+    0,
+    "Aurora is a MySQL- and PostgreSQL-compatible relational database with a distributed storage layer that scales automatically and replicates across three AZs.",
+  ),
+  sc(
+    "A dashboard repeatedly runs the same expensive read queries against an RDS database, and results change slowly. Which change reduces database load and latency MOST?",
+    ["Cache query results in Amazon ElastiCache", "Increase the retention period of backups", "Add more security groups", "Enable Multi-AZ"],
+    0,
+    "Caching frequently read, slowly changing data offloads the database and gives sub-millisecond reads.",
+  ),
+  sc(
+    "A gaming leaderboard needs sorted sets and sub-millisecond responses with persistence and replication. Which caching engine is BEST suited?",
+    ["Amazon ElastiCache for Redis", "Amazon ElastiCache for Memcached", "Amazon S3", "Amazon Athena"],
+    0,
+    "Redis supports rich data structures such as sorted sets, plus replication and persistence. Memcached is a simple key-value cache.",
+  ),
+  sc(
+    "An application has unpredictable, spiky traffic to a DynamoDB table and the team does not want to plan capacity. Which capacity mode fits?",
+    ["On-demand capacity mode", "Provisioned capacity with a fixed high setting", "Reserved capacity for a single item", "A single partition"],
+    0,
+    "On-demand mode scales automatically with traffic and you pay per request.",
+  ),
+  sc(
+    "A DynamoDB table receives heavy read traffic for a small set of hot items and the application needs microsecond read latency without code rewrites beyond changing the client. What should be added?",
+    ["DynamoDB Accelerator (DAX)", "A larger EBS volume", "An additional Region", "A Kinesis stream"],
+    0,
+    "DAX is a fully managed in-memory cache compatible with the DynamoDB API that delivers microsecond reads.",
+  ),
+  sc(
+    "An application needs to query a DynamoDB table by an attribute that is not part of its primary key. What should be created?",
+    ["A global secondary index on that attribute", "A second table with a copy of the code", "A larger read capacity for the base table only", "A scan run every request"],
+    0,
+    "A global secondary index provides efficient queries on alternate keys instead of full table scans.",
+  ),
+  sc(
+    "A development and test database is used only a few hours per day and workload varies significantly. The company wants relational compatibility and automatic scaling with minimal management. Which option is BEST?",
+    ["Amazon Aurora Serverless v2", "A large provisioned RDS instance running 24/7", "A self-managed database on a Dedicated Host", "DynamoDB provisioned at peak"],
+    0,
+    "Aurora Serverless v2 scales capacity up and down in fine increments to match demand.",
+  ),
+  sc(
+    "A retailer needs to run complex analytical SQL queries across petabytes of structured data with fast performance. Which service is designed for this?",
+    ["Amazon Redshift", "Amazon DynamoDB", "Amazon ElastiCache", "AWS Lambda"],
+    0,
+    "Redshift is a columnar data warehouse optimised for large-scale analytics.",
+  ),
+  sc(
+    "A Redshift cluster is running out of space because of years of historical data that is rarely queried. The data is already stored in S3. How can the company query it without loading it into the cluster?",
+    ["Use Amazon Redshift Spectrum to query the data in S3", "Delete the data", "Copy the data into DynamoDB", "Add a second AZ"],
+    0,
+    "Redshift Spectrum queries data in S3 directly, letting you keep cold data in cheaper storage.",
+  ),
+  sc(
+    "An application needs full-text search, log analytics and dashboards over large volumes of semi-structured data. Which managed service fits?",
+    ["Amazon OpenSearch Service", "Amazon Neptune", "Amazon RDS for Oracle", "AWS Glue DataBrew"],
+    0,
+    "OpenSearch Service provides search and log analytics with Kibana-compatible dashboards.",
+  ),
+  sc(
+    "A social application needs to store and traverse highly connected data, such as friends of friends, with millisecond latency. Which database is BEST suited?",
+    ["Amazon Neptune", "Amazon Redshift", "Amazon S3", "Amazon RDS for MySQL with joins"],
+    0,
+    "Neptune is a graph database optimised for relationship-heavy queries.",
+  ),
+  sc(
+    "A team stores billions of time-stamped sensor readings and mostly queries recent data with time-window aggregations. Which service is purpose-built for this?",
+    ["Amazon Timestream", "Amazon Neptune", "Amazon DocumentDB", "Amazon RDS for SQL Server"],
+    0,
+    "Timestream is a serverless time series database that tiers recent and historical data automatically.",
+  ),
+  sc(
+    "The storage of an RDS for MySQL database keeps filling up and requires manual resizing during off hours. Which feature avoids this?",
+    ["RDS storage autoscaling with a maximum storage threshold", "Bigger backup windows", "A read replica", "Disabling logging"],
+    0,
+    "Storage autoscaling increases allocated storage automatically when free space runs low.",
+  ),
+  sc(
+    "A company wants to migrate an on-premises MongoDB workload to AWS with minimal application changes. Which service provides MongoDB compatibility as a managed service?",
+    ["Amazon DocumentDB (with MongoDB compatibility)", "Amazon Neptune", "Amazon Redshift", "Amazon Athena"],
+    0,
+    "DocumentDB is a managed document database compatible with MongoDB APIs.",
+  ),
+  ms(
+    "A read-heavy application on Amazon RDS needs better performance. Which TWO actions can improve read performance? (Choose two.)",
+    ["Add one or more read replicas and direct read traffic to them", "Add an ElastiCache layer for frequently requested data", "Reduce the number of Availability Zones", "Turn off automated backups", "Lower the instance's IOPS"],
+    [0, 1],
+    "Replicas add read capacity, and caching offloads repeat reads. The other options do not improve read throughput.",
+  ),
+];

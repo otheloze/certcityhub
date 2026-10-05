@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.local
+.env.test
+.env.*.local
+*.log
+.next/
+coverage/
+*.tsbuildinfo
+
+# Locally-uploaded test content (tutor photos/resumes, org logos)
+apps/api/uploads/*/
+!apps/api/uploads/*/.gitkeep
+
+# Local Netlify folder
+.netlify
