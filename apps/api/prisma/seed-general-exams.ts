@@ -18,6 +18,8 @@ export const GENERAL_EXAMS: ExamSeed[] = [
     provider: "US CPA-style (unofficial)",
     level: "Professional",
     sortOrder: 30,
+    durationMinutes: 240,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Practice questions in the style of the US Certified Public Accountant exam covering financial accounting, auditing and ethics. Independent content, not affiliated with or endorsed by the AICPA or any state board.",
     topics: [
@@ -34,6 +36,8 @@ export const GENERAL_EXAMS: ExamSeed[] = [
     provider: "ACCA-style (unofficial)",
     level: "Professional",
     sortOrder: 31,
+    durationMinutes: 120,
+    blueprint: { questionCount: 50, randomize: true },
     description:
       "Practice questions in the style of the Association of Chartered Certified Accountants (ACCA) qualification covering financial reporting, management accounting and audit and ethics. Independent content, not affiliated with or endorsed by ACCA.",
     topics: [
@@ -50,6 +54,8 @@ export const GENERAL_EXAMS: ExamSeed[] = [
     provider: "ICAN-style (unofficial)",
     level: "Professional",
     sortOrder: 32,
+    durationMinutes: 180,
+    blueprint: { questionCount: 50, randomize: true },
     description:
       "Practice questions in the style of the Institute of Chartered Accountants of Nigeria (ICAN) covering financial reporting, taxation concepts and audit and governance. Independent content, not affiliated with or endorsed by ICAN.",
     topics: [

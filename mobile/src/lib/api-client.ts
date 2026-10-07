@@ -69,7 +69,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     } finally {
       clearTimeout(timer);
     }
-  } catch {
+  } catch (error) {
+    console.error(`apiFetch(${path}) network failure:`, error);
     throw new ApiError("Could not reach the server. Is it running?", 0);
   }
   if (!response.ok) {
@@ -159,6 +160,20 @@ export function registerTutor(displayName: string, email: string, password: stri
   return apiFetch<AuthResponse>("/auth/register-tutor", {
     method: "POST",
     body: JSON.stringify({ displayName, email, password }),
+  });
+}
+
+export function requestPasswordReset(email: string) {
+  return apiFetch<{ message: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function confirmPasswordReset(email: string, code: string, newPassword: string) {
+  return apiFetch<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ email, code, newPassword }),
   });
 }
 

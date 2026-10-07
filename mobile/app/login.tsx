@@ -46,6 +46,12 @@ export default function LoginScreen() {
       </Card>
 
       <Text>
+        <Link href="/forgot-password" style={{ color: "#3b82f6", fontWeight: "600" }}>
+          Forgot password?
+        </Link>
+      </Text>
+
+      <Text>
         <Muted>New here? </Muted>
         <Link href="/register" style={{ color: "#3b82f6", fontWeight: "600" }}>
           Create a free account

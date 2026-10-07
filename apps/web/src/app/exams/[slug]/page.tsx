@@ -2,19 +2,33 @@ import Link from "next/link";
 import { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import {
+  ApiError,
   ExamVersionConfig,
   TopicNode,
   fetchCatalogue,
   fetchExamBySlug,
   fetchPublishedVersions,
   fetchTopicTree,
+  rethrowIfDynamicServerUsage,
 } from "../../../lib/api-client";
 import { ExamActions, TopicOption } from "../../../components/exam-actions";
 import { ExamMonogram } from "../../../components/exam-card";
 import { examAccent } from "../../../lib/exam-theme";
 
+// A real 404 from the API means the exam genuinely doesn't exist; anything
+// else (network/DNS failure, a 5xx) must not be treated the same way, or a
+// transient infra blip looks identical to a permanently dead link. Letting
+// it propagate lets the nearest error.tsx boundary handle it instead.
+function examNotFoundOrRethrow(error: unknown): null {
+  rethrowIfDynamicServerUsage(error);
+  if (error instanceof ApiError && error.status === 404) {
+    return null;
+  }
+  throw error;
+}
+
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const exam = await fetchExamBySlug(params.slug).catch(() => null);
+  const exam = await fetchExamBySlug(params.slug).catch(examNotFoundOrRethrow);
   return { title: exam ? exam.title : "Exam" };
 }
 
@@ -71,17 +85,28 @@ function Rules({ config }: { config: ExamVersionConfig }) {
 }
 
 export default async function ExamDetailPage({ params }: { params: { slug: string } }) {
-  const exam = await fetchExamBySlug(params.slug).catch(() => null);
+  const exam = await fetchExamBySlug(params.slug).catch(examNotFoundOrRethrow);
   if (!exam) {
     notFound();
   }
 
   const [versions, catalogue] = await Promise.all([
-    fetchPublishedVersions(exam.id).catch(() => []),
-    fetchCatalogue().catch(() => []),
+    fetchPublishedVersions(exam.id).catch((error) => {
+      rethrowIfDynamicServerUsage(error);
+      return [];
+    }),
+    fetchCatalogue().catch((error) => {
+      rethrowIfDynamicServerUsage(error);
+      return [];
+    }),
   ]);
   const current = versions[0];
-  const topicTree = current ? await fetchTopicTree(current.id).catch(() => []) : [];
+  const topicTree = current
+    ? await fetchTopicTree(current.id).catch((error) => {
+        rethrowIfDynamicServerUsage(error);
+        return [];
+      })
+    : [];
   const stats = catalogue.find((e) => e.id === exam.id)?.version ?? null;
 
   return (

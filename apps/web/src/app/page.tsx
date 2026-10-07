@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { fetchCatalogue, fetchProducts, formatPrice } from "../lib/api-client";
+import { fetchCatalogue, fetchProducts, formatPrice, rethrowIfDynamicServerUsage } from "../lib/api-client";
 import { ExamCatalogue } from "../components/exam-catalogue";
 import { HeroSearch } from "../components/hero-search";
 import { SampleQuestion } from "../components/sample-question";
@@ -51,8 +51,14 @@ const FAQ = [
 
 export default async function HomePage({ searchParams }: { searchParams?: { q?: string } }) {
   const [exams, products] = await Promise.all([
-    fetchCatalogue().catch(() => []),
-    fetchProducts().catch(() => []),
+    fetchCatalogue().catch((error) => {
+      rethrowIfDynamicServerUsage(error);
+      return [];
+    }),
+    fetchProducts().catch((error) => {
+      rethrowIfDynamicServerUsage(error);
+      return [];
+    }),
   ]);
 
   const questionTotal = exams.reduce((sum, e) => sum + (e.version?.questionCount ?? 0), 0);

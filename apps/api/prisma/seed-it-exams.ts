@@ -15,6 +15,8 @@ export const IT_EXAMS: ExamSeed[] = [
     provider: "CompTIA (unofficial)",
     level: "Entry",
     sortOrder: 10,
+    durationMinutes: 90,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Practice questions in the style of CompTIA A+ covering hardware, operating systems, security and troubleshooting. Independent content, not affiliated with or endorsed by CompTIA.",
     topics: [
@@ -31,6 +33,8 @@ export const IT_EXAMS: ExamSeed[] = [
     provider: "ISACA-style (unofficial)",
     level: "Professional",
     sortOrder: 11,
+    durationMinutes: 240,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Practice questions in the style of the Certified Information Security Manager (CISM) covering governance, risk and incident management. Independent content, not affiliated with or endorsed by ISACA.",
     topics: [

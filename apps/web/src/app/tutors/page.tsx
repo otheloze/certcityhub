@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { API_ORIGIN } from "../../lib/api-client";
+import { API_ORIGIN, rethrowIfDynamicServerUsage } from "../../lib/api-client";
 import { fetchPublicTutors } from "../../lib/tutor-api";
 
 export const metadata = { title: "Find a tutor" };
 
 export default async function TutorsPage() {
-  const tutors = await fetchPublicTutors().catch(() => []);
+  const tutors = await fetchPublicTutors().catch((error) => {
+    rethrowIfDynamicServerUsage(error);
+    return [];
+  });
 
   return (
     <div className="container section-tight" style={{ paddingTop: "2.5rem" }}>

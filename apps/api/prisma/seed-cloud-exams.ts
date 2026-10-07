@@ -27,6 +27,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "ISC2 (unofficial)",
     level: "Professional",
     sortOrder: 10,
+    durationMinutes: 180,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Practice questions in the style of the Certified Cloud Security Professional (CCSP). Independent content, not affiliated with or endorsed by ISC2.",
     topics: [
@@ -43,6 +45,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "CompTIA (unofficial)",
     level: "Intermediate",
     sortOrder: 11,
+    durationMinutes: 90,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Practice questions in the style of CompTIA Cloud+. Independent content, not affiliated with or endorsed by CompTIA.",
     topics: [
@@ -59,6 +63,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "Microsoft Azure (unofficial)",
     level: "Associate",
     sortOrder: 12,
+    durationMinutes: 100,
+    blueprint: { questionCount: 50, randomize: true },
     description:
       "Practice questions in the style of Microsoft Certified: Azure Administrator Associate (AZ-104). Independent content, not affiliated with or endorsed by Microsoft.",
     topics: [
@@ -75,6 +81,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "Microsoft (unofficial)",
     level: "Expert",
     sortOrder: 13,
+    durationMinutes: 100,
+    blueprint: { questionCount: 50, randomize: true },
     description:
       "Practice questions in the style of Microsoft 365 Administrator Expert (MS-102). Independent content, not affiliated with or endorsed by Microsoft.",
     topics: [
@@ -91,6 +99,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "Microsoft Azure (unofficial)",
     level: "Expert",
     sortOrder: 14,
+    durationMinutes: 120,
+    blueprint: { questionCount: 50, randomize: true },
     description:
       "Scenario-style practice in the style of Microsoft Certified: Azure Solutions Architect Expert (AZ-305), which builds on AZ-104 administrator skills. Independent content, not affiliated with or endorsed by Microsoft.",
     topics: [
@@ -144,7 +154,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "Amazon Web Services (unofficial)",
     level: "Professional",
     sortOrder: 16,
-    durationMinutes: 25,
+    durationMinutes: 180,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Scenario-style practice in the style of AWS Certified Solutions Architect - Professional (SAP-C02). Independent content, not affiliated with or endorsed by Amazon Web Services.",
     topics: [
@@ -161,6 +172,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "Amazon Web Services (unofficial)",
     level: "Associate",
     sortOrder: 17,
+    durationMinutes: 130,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Practice questions in the style of AWS Certified Developer - Associate (DVA-C02). Independent content, not affiliated with or endorsed by Amazon Web Services.",
     topics: [
@@ -177,7 +190,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "Amazon Web Services (unofficial)",
     level: "Professional",
     sortOrder: 18,
-    durationMinutes: 25,
+    durationMinutes: 180,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Scenario-style practice in the style of AWS Certified DevOps Engineer - Professional (DOP-C02). Independent content, not affiliated with or endorsed by Amazon Web Services.",
     topics: [
@@ -203,6 +217,8 @@ export const CLOUD_EXAMS: ExamSeed[] = [
     provider: "Google Cloud (unofficial)",
     level: "Associate",
     sortOrder: 19,
+    durationMinutes: 120,
+    blueprint: { questionCount: 55, randomize: true },
     description:
       "Practice questions in the style of Google Cloud Certified Associate Cloud Engineer. Independent content, not affiliated with or endorsed by Google.",
     topics: [

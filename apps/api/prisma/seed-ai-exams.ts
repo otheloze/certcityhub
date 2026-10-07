@@ -22,6 +22,8 @@ export const AI_EXAMS: ExamSeed[] = [
     provider: "NVIDIA (unofficial)",
     level: "Associate",
     sortOrder: 20,
+    durationMinutes: 60,
+    blueprint: { questionCount: 55, randomize: true },
     description:
       "Practice questions in the style of the NVIDIA generative AI and large language model associate certification. Independent content, not affiliated with or endorsed by NVIDIA.",
     topics: [
@@ -38,6 +40,8 @@ export const AI_EXAMS: ExamSeed[] = [
     provider: "IAPP (unofficial)",
     level: "Professional",
     sortOrder: 21,
+    durationMinutes: 180,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Practice questions in the style of the IAPP AI Governance Professional (AIGP) certification. Independent content, not affiliated with or endorsed by IAPP.",
     topics: [
@@ -54,6 +58,8 @@ export const AI_EXAMS: ExamSeed[] = [
     provider: "Microsoft Azure (unofficial)",
     level: "Foundational",
     sortOrder: 22,
+    durationMinutes: 45,
+    blueprint: { questionCount: 50, randomize: true },
     description:
       "Practice questions in the style of Microsoft Azure AI Fundamentals (AI-900 and its successor versions). Independent content, not affiliated with or endorsed by Microsoft.",
     topics: [
@@ -102,6 +108,8 @@ export const AI_EXAMS: ExamSeed[] = [
     provider: "Anthropic (unofficial)",
     level: "Foundations",
     sortOrder: 25,
+    durationMinutes: 120,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Unofficial practice on designing applications with Claude: model choice, tools and agents, evaluation and safety. Independent content based on general knowledge, not an official Anthropic exam blueprint. Not affiliated with or endorsed by Anthropic.",
     topics: [
@@ -118,6 +126,8 @@ export const AI_EXAMS: ExamSeed[] = [
     provider: "Anthropic (unofficial)",
     level: "Foundations",
     sortOrder: 26,
+    durationMinutes: 120,
+    blueprint: { questionCount: 60, randomize: true },
     description:
       "Unofficial practice on using Claude effectively and safely: basics, prompting and responsible use. Independent content based on general knowledge, not an official Anthropic exam blueprint. Not affiliated with or endorsed by Anthropic.",
     topics: [

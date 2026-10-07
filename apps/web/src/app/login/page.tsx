@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { login, ApiError } from "../../lib/api-client";
@@ -13,6 +13,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+
+  useEffect(() => {
+    setResetSuccess(new URLSearchParams(window.location.search).get("reset") === "success");
+  }, []);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -49,6 +54,7 @@ export default function LoginPage() {
 
       <div className="card auth-card">
         <h2>Log in</h2>
+        {resetSuccess ? <p className="notice">Password updated. You can now log in.</p> : null}
         <form onSubmit={handleSubmit}>
           <label>
             Email
@@ -70,6 +76,9 @@ export default function LoginPage() {
           </button>
         </form>
         <p style={{ marginTop: "1rem", marginBottom: 0, fontSize: "0.92rem" }}>
+          <Link href="/forgot-password">Forgot password?</Link>
+        </p>
+        <p style={{ marginTop: "0.5rem", marginBottom: 0, fontSize: "0.92rem" }}>
           New here? <Link href="/register">Create a free account</Link>
         </p>
       </div>

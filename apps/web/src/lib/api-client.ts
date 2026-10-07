@@ -56,6 +56,17 @@ export class ApiError extends Error {
 // from Netlify, rather than this API client's own, much faster, error path).
 const REQUEST_TIMEOUT_MS = 10_000;
 
+// Server Components that do `someFetch().catch(() => fallback)` must call
+// this first inside the catch callback - otherwise they silently swallow
+// Next.js's internal DynamicServerError (see apiFetch's catch block below)
+// and the page renders a fallback/empty state even though the real fetch
+// never actually failed.
+export function rethrowIfDynamicServerUsage(error: unknown): void {
+  if (error instanceof Error && (error as { digest?: string }).digest === "DYNAMIC_SERVER_USAGE") {
+    throw error;
+  }
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
@@ -71,7 +82,21 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     } finally {
       clearTimeout(timer);
     }
-  } catch {
+  } catch (error) {
+    // Next.js's App Router throws this internally (as a real `throw`, not a
+    // rejected promise it handles itself) to bail a page out of static
+    // rendering when a no-store fetch runs - it must propagate unmodified
+    // or Next's own rendering pipeline breaks. Observed on Netlify's Next.js
+    // Runtime specifically: every no-store fetch here silently became an
+    // empty array because this control-flow error was being caught below
+    // and converted into a generic "network failure".
+    if (error instanceof Error && (error as { digest?: string }).digest === "DYNAMIC_SERVER_USAGE") {
+      throw error;
+    }
+    // Logged (not swallowed) so a real network-level failure is visible in
+    // server logs - this is the only place a DNS/connect/timeout error
+    // surfaces, since every caller treats a thrown ApiError as the signal.
+    console.error(`apiFetch(${path}) network failure:`, error);
     throw new ApiError("Could not reach the server. Is it running?", 0);
   }
   if (!response.ok) {
@@ -163,6 +188,20 @@ export function registerTutor(displayName: string, email: string, password: stri
     "/auth/register-tutor",
     { method: "POST", body: JSON.stringify({ displayName, email, password }) },
   );
+}
+
+export function requestPasswordReset(email: string) {
+  return apiFetch<{ message: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function confirmPasswordReset(email: string, code: string, newPassword: string) {
+  return apiFetch<{ message: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ email, code, newPassword }),
+  });
 }
 
 // The API origin without the "/api" path segment, e.g. "http://localhost:3001".

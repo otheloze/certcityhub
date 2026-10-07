@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { fetchExamCatalogue, fetchProducts, formatPrice } from "../../lib/api-client";
+import { fetchExamCatalogue, fetchProducts, rethrowIfDynamicServerUsage } from "../../lib/api-client";
+import { PricingCards } from "../../components/pricing-cards";
 
 export const metadata = { title: "Pricing" };
 
@@ -12,8 +12,16 @@ const FAQ = [
 ];
 
 export default async function PricingPage() {
-  const [products, exams] = await Promise.all([fetchProducts().catch(() => []), fetchExamCatalogue().catch(() => [])]);
-  const examTitle = (id: string | null) => exams.find((e) => e.id === id)?.title ?? "One exam";
+  const [products, exams] = await Promise.all([
+    fetchProducts().catch((error) => {
+      rethrowIfDynamicServerUsage(error);
+      return [];
+    }),
+    fetchExamCatalogue().catch((error) => {
+      rethrowIfDynamicServerUsage(error);
+      return [];
+    }),
+  ]);
   const sorted = [...products].sort((a, b) => a.priceCents - b.priceCents);
   // Best-value is a per-attempt-price race - a $0 plan trivially "wins" it,
   // and an unlimited plan's large placeholder credit count trivially wins it
@@ -29,50 +37,7 @@ export default async function PricingPage() {
         <p className="lead">No subscription. Choose the plan that fits how much you want to practise.</p>
       </div>
 
-      <div className="grid grid-3" style={{ marginBottom: "2.5rem" }}>
-        {sorted.map((p) => {
-          const isFree = p.priceCents === 0;
-          const isBest = bestValue?.id === p.id;
-          return (
-            <div key={p.id} className={"card price-card" + (isBest ? " featured" : "")}>
-              {isFree ? (
-                <span className="badge badge-good" style={{ alignSelf: "flex-start" }}>
-                  Included at signup
-                </span>
-              ) : isBest ? (
-                <span className="badge badge-primary" style={{ alignSelf: "flex-start" }}>
-                  Best value
-                </span>
-              ) : (
-                <span className="badge" style={{ alignSelf: "flex-start" }}>
-                  {p.scopeType === "EXAM" ? examTitle(p.examId) : "All exams"}
-                </span>
-              )}
-              <h2 style={{ margin: 0 }}>{p.name}</h2>
-              <div className="price">
-                {formatPrice(p.priceCents, p.currency)}
-                <small>{isFree ? " forever" : " one-off"}</small>
-              </div>
-              {!p.unlimited ? (
-                <p style={{ margin: 0, fontSize: "0.88rem" }}>{formatPrice(Math.round(p.priceCents / p.credits), p.currency)} per attempt</p>
-              ) : null}
-              <ul className="check-list">
-                <li>{p.unlimited ? "Unlimited attempts" : `${p.credits} attempt${p.credits === 1 ? "" : "s"}`}</li>
-                <li>{p.questionFraction < 1 ? `About ${Math.round(p.questionFraction * 100)}% of the exam's questions` : "Full exam questions"}</li>
-                <li>{p.scopeType === "EXAM" ? `For ${examTitle(p.examId)}` : "Use on any exam"}</li>
-                <li>{p.validityDays ? `Valid for ${p.validityDays} days` : "Never expires"}</li>
-              </ul>
-              <Link
-                href={isFree ? "/register" : "/wallet"}
-                className={"btn btn-block " + (isBest ? "btn-primary" : "btn-secondary")}
-                style={{ marginTop: "auto" }}
-              >
-                {isFree ? "Create free account" : `Get ${p.name.length > 24 ? "this pack" : p.name}`}
-              </Link>
-            </div>
-          );
-        })}
-      </div>
+      <PricingCards products={sorted} exams={exams} bestValueId={bestValue?.id ?? null} />
 
       <div className="container-narrow faq" id="faq" style={{ padding: 0 }}>
         <h2>Pricing questions</h2>

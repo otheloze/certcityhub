@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AdminGate } from "../../components/admin-gate";
+import { API_ORIGIN } from "../../lib/api-client";
 
 export default function AdminHomePage() {
   return (
@@ -29,7 +30,7 @@ export default function AdminHomePage() {
               <strong>Tutors</strong>
               <span>Review submitted tutor profiles before they go live and are suggested to students.</span>
             </Link>
-            <a href="http://localhost:3001/api/docs" className="admin-card" target="_blank" rel="noreferrer">
+            <a href={`${API_ORIGIN}/api/docs`} className="admin-card" target="_blank" rel="noreferrer">
               <strong>API reference</strong>
               <span>Full Swagger documentation of every endpoint.</span>
             </a>

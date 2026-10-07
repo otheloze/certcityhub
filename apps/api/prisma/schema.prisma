@@ -102,8 +102,27 @@ model User {
   creditLots             CreditLot[]
   organizationMembership OrganizationMember?
   tutorProfile           TutorProfile?
+  passwordResetCodes     PasswordResetCode[]
 
   @@map("users")
+}
+
+// A 6-digit, low-entropy secret - bcrypt-hashed (not sha256) for the same
+// reason passwordHash is, per org-secrets.util.ts's own stated rule for
+// why high- vs low-entropy secrets are hashed differently in this project.
+// Rows are never deleted (audit trail); a new request invalidates any
+// prior un-consumed row for the same user rather than replacing it in place.
+model PasswordResetCode {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_codes")
 }
 
 model Exam {

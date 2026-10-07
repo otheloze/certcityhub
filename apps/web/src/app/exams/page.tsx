@@ -1,10 +1,13 @@
-import { fetchCatalogue } from "../../lib/api-client";
+import { fetchCatalogue, rethrowIfDynamicServerUsage } from "../../lib/api-client";
 import { ExamCatalogue } from "../../components/exam-catalogue";
 
 export const metadata = { title: "All exams" };
 
 export default async function ExamsPage({ searchParams }: { searchParams?: { q?: string } }) {
-  const exams = await fetchCatalogue().catch(() => []);
+  const exams = await fetchCatalogue().catch((error) => {
+    rethrowIfDynamicServerUsage(error);
+    return [];
+  });
   return (
     <div className="container section-tight" style={{ paddingTop: "2.5rem" }}>
       <div className="section-head">

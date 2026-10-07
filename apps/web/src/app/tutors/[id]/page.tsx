@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { API_ORIGIN } from "../../../lib/api-client";
+import { API_ORIGIN, rethrowIfDynamicServerUsage } from "../../../lib/api-client";
 import { fetchPublicTutor } from "../../../lib/tutor-api";
 
 export default async function TutorProfilePage({ params }: { params: { id: string } }) {
-  const tutor = await fetchPublicTutor(params.id).catch(() => null);
+  const tutor = await fetchPublicTutor(params.id).catch((error) => {
+    rethrowIfDynamicServerUsage(error);
+    return null;
+  });
   if (!tutor) {
     notFound();
   }
