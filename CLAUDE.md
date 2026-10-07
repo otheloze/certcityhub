@@ -286,6 +286,23 @@ with `@Public()`, restrict with `@Roles(Role.X)`. Anything needing
 resource-ownership (not just role) is checked ad hoc inside the service
 method, not the guard layer.
 
+### Transactional email & password reset
+
+`MailService` (`apps/api/src/mail/mail.service.ts`, exported by `MailModule`)
+wraps Resend and is fire-and-forget by design — `send()` catches and logs
+every error itself, so a missing `RESEND_API_KEY` or a Resend outage never
+breaks registration/login/password-reset. Without `RESEND_API_KEY` set, it
+logs what it would have sent instead of calling the API — this is the normal
+local-dev state, not a misconfiguration. Callers invoke it with `void
+this.mailService.send...(...)` (not `await`) for the same reason.
+
+Password reset (`AuthService.forgotPassword`/`resetPassword`) stores only a
+bcrypt hash of a 6-digit code (`PasswordResetCode`, `password-reset.util.ts`'s
+`generateResetCode`/`RESET_CODE_TTL_MS` = 15 min), never the code itself.
+`forgotPassword` always returns the same message regardless of whether the
+email exists (matching `login()`'s existing non-enumerating precedent) and
+invalidates any prior unconsumed code for that user before issuing a new one.
+
 ### Branding
 
 `BRAND_NAME`/`BRAND_TAGLINE` live in `apps/web/src/lib/brand.ts` and
@@ -312,6 +329,16 @@ rebrand means editing both, not just one.
   `data-theme` override; dataviz follows fixed rules (single-series = blue
   bars, status is always icon + label not color alone, ring gauge for a
   single headline number) documented inline in `globals.css`.
+- **Any Server Component that does `someFetch().catch(() => fallback)` must
+  call `rethrowIfDynamicServerUsage(error)` first inside that catch
+  callback** (`lib/api-client.ts`). Next.js throws a control-flow
+  `DynamicServerError` (`digest === "DYNAMIC_SERVER_USAGE"`) internally when
+  a `no-store` fetch runs during static-rendering detection; swallowing it in
+  an app-level `.catch()` breaks Next's own dynamic-rendering fallback and
+  silently renders an empty/fallback state instead of the real data — this
+  previously made exams/pricing/the homepage all appear empty in production
+  (Netlify) while working fine with `next start` locally, since that code
+  path isn't exercised the same way there.
 
 ### Mobile app (`mobile`)
 
