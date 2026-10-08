@@ -777,41 +777,6 @@ input[type="radio"] {
   font-weight: 800;
   margin-right: 0.35rem;
 }
-.hero-visual {
-  position: relative;
-  margin-bottom: 1.75rem;
-}
-@media (max-width: 900px) {
-  .hero-visual {
-    margin-bottom: 0;
-  }
-}
-.hero-photo {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 1 / 1;
-  object-fit: cover;
-  border-radius: 20px;
-  box-shadow: var(--shadow);
-  display: block;
-}
-.hero-visual-card {
-  position: absolute;
-  left: -1.25rem;
-  bottom: -1.75rem;
-  width: min(320px, 85%);
-}
-.hero-visual-card .sample-card {
-  margin: 0;
-}
-@media (max-width: 900px) {
-  .hero-visual-card {
-    position: static;
-    width: 100%;
-    margin-top: 1.25rem;
-  }
-}
-
 /* stats strip */
 .stats-strip {
   display: grid;

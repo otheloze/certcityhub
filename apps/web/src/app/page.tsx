@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { fetchCatalogue, fetchProducts, formatPrice, rethrowIfDynamicServerUsage } from "../lib/api-client";
 import { ExamCatalogue } from "../components/exam-catalogue";
@@ -92,19 +91,7 @@ export default async function HomePage({ searchParams }: { searchParams?: { q?: 
               <span>Server-timed simulations</span>
             </div>
           </div>
-          <div className="hero-visual">
-            <Image
-              src="/images/hero-student.jpg"
-              alt="A student focused on a timed practice exam in a laptop browser"
-              width={1254}
-              height={1254}
-              priority
-              className="hero-photo"
-            />
-            <div className="hero-visual-card">
-              <SampleQuestion />
-            </div>
-          </div>
+          <SampleQuestion />
         </div>
       </section>
 
