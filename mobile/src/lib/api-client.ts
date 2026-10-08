@@ -382,6 +382,23 @@ export function purchaseProduct(token: string, productId: string) {
   });
 }
 
+// Mobile has no PayPal JS SDK popup to drive approval, so it opens
+// `approveUrl` in an in-app browser and relies on PayPal redirecting back to
+// returnUrl/cancelUrl - unlike the web app, this always sends both.
+export function createPaypalOrder(token: string, productId: string, returnUrl: string, cancelUrl: string) {
+  return authFetch<{ orderId: string; approveUrl?: string }>(token, "/credits/paypal/create-order", {
+    method: "POST",
+    body: JSON.stringify({ productId, returnUrl, cancelUrl }),
+  });
+}
+
+export function capturePaypalOrder(token: string, productId: string, orderId: string) {
+  return authFetch<{ purchase: { id: string; status: string }; lot: WalletLot }>(token, "/credits/paypal/capture-order", {
+    method: "POST",
+    body: JSON.stringify({ productId, orderId }),
+  });
+}
+
 export function fetchWallet(token: string, examId?: string) {
   return authFetch<Wallet>(token, `/users/me/credits${examId ? `?examId=${examId}` : ""}`);
 }

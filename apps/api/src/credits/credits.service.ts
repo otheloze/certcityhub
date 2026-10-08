@@ -11,6 +11,7 @@ import { CreditLot, CreditScope, CreditSource, Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { AuditService } from "../audit/audit.service";
 import { PAYMENT_PROVIDER, PaymentProvider } from "./payment/payment-provider";
+import { PaypalService } from "./payment/paypal.service";
 import { isLotEligible, LotCandidate, pickLot } from "./lot-selection.util";
 
 type Tx = Prisma.TransactionClient;
@@ -71,6 +72,7 @@ export class CreditsService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     @Inject(PAYMENT_PROVIDER) private readonly payments: PaymentProvider,
+    private readonly paypal: PaypalService,
   ) {}
 
   // ---------------------------------------------------------------------
@@ -197,13 +199,7 @@ export class CreditsService {
   }
 
   async purchase(userId: string, productId: string) {
-    const product = await this.prisma.product.findUnique({ where: { id: productId } });
-    if (!product || !product.isActive) {
-      throw new NotFoundException("Product not found");
-    }
-    if (product.code === FREE_PRODUCT_CODE) {
-      throw new BadRequestException("The free plan is granted automatically and cannot be purchased.");
-    }
+    const product = await this.requirePurchasableProduct(productId);
 
     const payment = await this.payments.charge({
       userId,
@@ -213,31 +209,89 @@ export class CreditsService {
     });
 
     if (!payment.ok) {
-      await this.prisma.purchase.create({
-        data: {
-          userId,
-          productId,
-          status: "FAILED",
-          amountCents: product.priceCents,
-          currency: product.currency,
-          providerRef: payment.providerRef,
-        },
-      });
+      await this.recordFailedPurchase(userId, product, payment.providerRef);
       throw new HttpException(
         `Payment failed${payment.failureReason ? `: ${payment.failureReason}` : ""}`,
         HttpStatus.PAYMENT_REQUIRED,
       );
     }
 
+    return this.grantPurchase(userId, product, payment.providerRef);
+  }
+
+  // ---------------------------------------------------------------------
+  // PayPal checkout (Orders v2 API: create on the server from the product's
+  // real price, then capture after the buyer approves in the PayPal popup).
+  // ---------------------------------------------------------------------
+
+  async createPaypalOrder(userId: string, productId: string, redirect?: { returnUrl: string; cancelUrl: string }) {
+    const product = await this.requirePurchasableProduct(productId);
+    return this.paypal.createOrder(product.priceCents, product.currency, product.name, redirect);
+  }
+
+  async capturePaypalOrder(userId: string, productId: string, orderId: string) {
+    const product = await this.requirePurchasableProduct(productId);
+
+    const capture = await this.paypal.captureOrder(orderId, product.priceCents, product.currency);
+    if (!capture.ok) {
+      await this.recordFailedPurchase(userId, product, capture.providerRef);
+      throw new HttpException(
+        `Payment failed${capture.failureReason ? `: ${capture.failureReason}` : ""}`,
+        HttpStatus.PAYMENT_REQUIRED,
+      );
+    }
+
+    return this.grantPurchase(userId, product, capture.providerRef);
+  }
+
+  private async requirePurchasableProduct(productId: string) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } });
+    if (!product || !product.isActive) {
+      throw new NotFoundException("Product not found");
+    }
+    if (product.code === FREE_PRODUCT_CODE) {
+      throw new BadRequestException("The free plan is granted automatically and cannot be purchased.");
+    }
+    return product;
+  }
+
+  private recordFailedPurchase(userId: string, product: { id: string; priceCents: number; currency: string }, providerRef?: string) {
+    return this.prisma.purchase.create({
+      data: {
+        userId,
+        productId: product.id,
+        status: "FAILED",
+        amountCents: product.priceCents,
+        currency: product.currency,
+        providerRef,
+      },
+    });
+  }
+
+  private grantPurchase(
+    userId: string,
+    product: {
+      id: string;
+      name: string;
+      priceCents: number;
+      currency: string;
+      scopeType: CreditScope;
+      examId: string | null;
+      credits: number;
+      validityDays: number | null;
+      questionFraction: number;
+    },
+    providerRef?: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const purchase = await tx.purchase.create({
         data: {
           userId,
-          productId,
+          productId: product.id,
           status: "COMPLETED",
           amountCents: product.priceCents,
           currency: product.currency,
-          providerRef: payment.providerRef,
+          providerRef,
         },
       });
       const lot = await this.createLot(tx, {

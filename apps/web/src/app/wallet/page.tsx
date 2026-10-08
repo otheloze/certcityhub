@@ -15,6 +15,9 @@ import {
   formatPrice,
   purchaseProduct,
 } from "../../lib/api-client";
+import { PaypalCheckoutButton } from "../../components/paypal-button";
+
+const PAYPAL_ENABLED = Boolean(process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID);
 
 const REASON_LABEL: Record<CreditTransactionView["reason"], string> = {
   GRANT: "Attempts added",
@@ -76,6 +79,12 @@ export default function WalletPage() {
     } finally {
       setBuying(null);
     }
+  }
+
+  async function onPaypalSuccess(product: Product) {
+    setNotice(`Added ${product.credits} attempt${product.credits === 1 ? "" : "s"} (${product.name}) via PayPal.`);
+    setError(null);
+    await load();
   }
 
   return (
@@ -162,9 +171,18 @@ export default function WalletPage() {
                 <span className="field-note" style={{ marginTop: "auto" }}>
                   Included automatically when you sign up
                 </span>
+              ) : PAYPAL_ENABLED && token ? (
+                <div style={{ marginTop: "auto" }}>
+                  <PaypalCheckoutButton
+                    token={token}
+                    productId={product.id}
+                    currency={product.currency}
+                    onSuccess={() => onPaypalSuccess(product)}
+                  />
+                </div>
               ) : (
                 <button type="button" className="btn btn-primary" disabled={buying !== null} onClick={() => buy(product)} style={{ marginTop: "auto" }}>
-                  {buying === product.id ? "Processing…" : "Buy now"}
+                  {buying === product.id ? "Processing…" : "Buy now (sandbox)"}
                 </button>
               )}
             </div>

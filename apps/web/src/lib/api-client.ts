@@ -409,6 +409,20 @@ export function purchaseProduct(token: string, productId: string) {
   });
 }
 
+export function createPaypalOrder(token: string, productId: string) {
+  return authFetch<{ orderId: string }>(token, "/credits/paypal/create-order", {
+    method: "POST",
+    body: JSON.stringify({ productId }),
+  });
+}
+
+export function capturePaypalOrder(token: string, productId: string, orderId: string) {
+  return authFetch<{ purchase: { id: string; status: string }; lot: WalletLot }>(token, "/credits/paypal/capture-order", {
+    method: "POST",
+    body: JSON.stringify({ productId, orderId }),
+  });
+}
+
 export function fetchWallet(token: string, examId?: string) {
   return authFetch<Wallet>(token, `/users/me/credits${examId ? `?examId=${examId}` : ""}`);
 }

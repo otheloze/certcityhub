@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Public } from "../common/decorators/public.decorator";
 import { CurrentUser, CurrentUserPayload } from "../common/decorators/current-user.decorator";
 import { CreditsService } from "./credits.service";
-import { PurchaseDto } from "./dto/credits.dto";
+import { CapturePaypalOrderDto, PurchaseDto, CreatePaypalOrderDto } from "./dto/credits.dto";
 
 @ApiTags("credits")
 @Controller()
@@ -20,6 +20,19 @@ export class CreditsController {
   @Post("credits/purchase")
   purchase(@Body() dto: PurchaseDto, @CurrentUser() user: CurrentUserPayload) {
     return this.creditsService.purchase(user.userId, dto.productId);
+  }
+
+  @ApiBearerAuth()
+  @Post("credits/paypal/create-order")
+  createPaypalOrder(@Body() dto: CreatePaypalOrderDto, @CurrentUser() user: CurrentUserPayload) {
+    const redirect = dto.returnUrl && dto.cancelUrl ? { returnUrl: dto.returnUrl, cancelUrl: dto.cancelUrl } : undefined;
+    return this.creditsService.createPaypalOrder(user.userId, dto.productId, redirect);
+  }
+
+  @ApiBearerAuth()
+  @Post("credits/paypal/capture-order")
+  capturePaypalOrder(@Body() dto: CapturePaypalOrderDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.creditsService.capturePaypalOrder(user.userId, dto.productId, dto.orderId);
   }
 
   @ApiBearerAuth()

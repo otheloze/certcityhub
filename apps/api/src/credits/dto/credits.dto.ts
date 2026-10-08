@@ -20,6 +20,35 @@ export class PurchaseDto {
   productId!: string;
 }
 
+export class CreatePaypalOrderDto {
+  @ApiProperty()
+  @IsString()
+  productId!: string;
+
+  // Only the mobile app sets these (its browser-redirect checkout flow
+  // needs somewhere to come back to); the web app's PayPal Buttons SDK
+  // handles approval in its own popup and never sends either.
+  @ApiProperty({ required: false, description: "Mobile app only - where PayPal redirects after approval" })
+  @IsOptional()
+  @IsString()
+  returnUrl?: string;
+
+  @ApiProperty({ required: false, description: "Mobile app only - where PayPal redirects if the buyer cancels" })
+  @IsOptional()
+  @IsString()
+  cancelUrl?: string;
+}
+
+export class CapturePaypalOrderDto {
+  @ApiProperty()
+  @IsString()
+  productId!: string;
+
+  @ApiProperty()
+  @IsString()
+  orderId!: string;
+}
+
 export class AdminGrantDto {
   @ApiProperty()
   @IsString()
