@@ -1,3 +1,11 @@
+# DO NOT run `netlify deploy` from inside this monorepo on Windows.
+# The CLI detects the npm workspace and (a) writes the server function to
+# apps/web/apps/web/.netlify, so none is uploaded and every page 404s, or
+# (b) when run from the repo root with --filter, @netlify/plugin-nextjs
+# emits backslash paths ('\var\task\apps\web') and the function 502s.
+# Production deploys are made from the standalone copy instead:
+#   1. copy apps/web/src into C:\Users\user\certcity-web-deploy\src
+#   2. cd C:\Users\user\certcity-web-deploy && npx netlify deploy --prod
 [build]
   command = "npm install && npx next build"
   publish = ".next"
